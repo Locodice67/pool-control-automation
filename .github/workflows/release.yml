@@ -1,0 +1,86 @@
+name: "Release - Auto-tag & GitHub Release"
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "blueprints/**/*.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from blueprint
+        id: version
+        run: |
+          VERSION=$(grep -E '^\s+version:\s+"?[0-9]+\.[0-9]+\.[0-9]+"?' blueprints/automation/Locodice67/pool_control_automation.yaml \
+            | sed 's/.*version:\s*"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Extracted version: $VERSION"
+
+      - name: Check if tag already exists
+        id: tag_check
+        env:
+          TAG: "v${{ steps.version.outputs.version }}"
+        run: |
+          if git tag -l "$TAG" | grep -q .; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag $TAG already exists — skipping release"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag $TAG is new — creating release"
+          fi
+
+      - name: Create tag
+        if: steps.tag_check.outputs.exists == 'false'
+        env:
+          TAG: "v${{ steps.version.outputs.version }}"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Generate release notes
+        if: steps.tag_check.outputs.exists == 'false'
+        id: release_notes
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | head -n 2 | tail -n 1 || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            NOTES=$(git log --oneline --no-decorate "$PREV_TAG..HEAD" 2>/dev/null || echo "First release")
+          else
+            NOTES="Initial release v${{ steps.version.outputs.version }}"
+          fi
+          {
+            echo "notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.version.outputs.version }}"
+          name: "v${{ steps.version.outputs.version }}"
+          body: |
+            ## 💧 Gestion Intelligente Piscine — v${{ steps.version.outputs.version }}
+
+            ${{ steps.release_notes.outputs.notes }}
+
+            ### Installation
+            Dans Home Assistant : Paramètres → Automations → Blueprints → Importer un blueprint
+            ```
+            https://github.com/Locodice67/pool-control-automation/blob/main/blueprints/automation/Locodice67/pool_control_automation.yaml
+            ```
+          draft: false
+          prerelease: false
