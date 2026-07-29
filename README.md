@@ -4,8 +4,6 @@
 ![Last Release](https://img.shields.io/github/release-date/Locodice67/pool-control-automation?label=Dernière%20release)
 ![HACS](https://img.shields.io/badge/HACS-Blueprint-41BDF5)
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint URL pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FLocodice67%2Fpool-control-automation%2Fblob%2Fmain%2Fblueprints%2Fpool-control-automation.yaml)
-
 Blueprint Home Assistant pour gérer la filtration et les traitements de piscine.
 
 ## 🚀 Installation
