@@ -21,7 +21,7 @@ Ce blueprint utilise un système de versioning sémantique (`v1.0.0`, `v1.1.0`, 
 1. Aller dans **Paramètres → Automations → Blueprints → Importer un blueprint**
 2. Coller l'URL suivante :
    ```
-   https://github.com/Locodice67/pool-control-automation/blob/main/blueprints/automation/Locodice67/pool_control_automation.yaml
+   https://github.com/Locodice67/pool-control-automation/blob/main/blueprints/pool-control-automation.yaml
    ```
 
 ### Via HACS (recommandé pour les mises à jour automatiques)

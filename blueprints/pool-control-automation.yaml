@@ -23,7 +23,7 @@ blueprint:
     </details>
 
   domain: automation
-  source_url: "https://github.com/Locodice67/pool-control-automation/blob/main/blueprints/automation/Locodice67/pool_control_automation.yaml"
+  source_url: "https://github.com/Locodice67/pool-control-automation/blob/main/blueprints/pool-control-automation.yaml"
   version: "1.0.0"
   input:
     

@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "blueprints/**/*.yaml"
+      - "blueprints/*.yaml"
   workflow_dispatch:
 
 permissions:
@@ -22,7 +22,7 @@ jobs:
       - name: Extract version from blueprint
         id: version
         run: |
-          VERSION=$(grep -E '^\s+version:\s+"?[0-9]+\.[0-9]+\.[0-9]+"?' blueprints/automation/Locodice67/pool_control_automation.yaml \
+          VERSION=$(grep -E '^\s+version:\s+"?[0-9]+\.[0-9]+\.[0-9]+"?' blueprints/pool-control-automation.yaml \
             | sed 's/.*version:\s*"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Extracted version: $VERSION"
@@ -80,7 +80,7 @@ jobs:
             ### Installation
             Dans Home Assistant : Paramètres → Automations → Blueprints → Importer un blueprint
             ```
-            https://github.com/Locodice67/pool-control-automation/blob/main/blueprints/automation/Locodice67/pool_control_automation.yaml
+            https://github.com/Locodice67/pool-control-automation/blob/main/blueprints/pool-control-automation.yaml
             ```
           draft: false
           prerelease: false
