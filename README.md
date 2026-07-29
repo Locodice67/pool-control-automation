@@ -1,4 +1,4 @@
-# 💧 Gestion Intelligente Piscine
+# 💧 Pool Control Automation
 
 ![Version](https://img.shields.io/github/v/release/Locodice67/pool-control-automation?label=Version)
 ![Last Release](https://img.shields.io/github/release-date/Locodice67/pool-control-automation?label=Dernière%20release)
