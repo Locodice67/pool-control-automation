@@ -1,16 +1,17 @@
 blueprint:
-  name: "💧 Gestion Intelligente Piscine v1.2.1"
+  name: "💧 Gestion Intelligente Piscine v1.2.2"
   description: |
 
     # 💧 Gestion Avancée de la Piscine
     Une solution complète pour automatiser la filtration, gérer les traitements et optimiser votre consommation électrique.
 
-    **Version: "1.2.1"**
+    **Version: "1.2.2"**
     
     ### 🚀 Fonctionnalités
     - 🕐 **Planification** : Cycle matinal + Pause moteur + Recalcul automatique.
     - 🌡️ **Modes** : Normal, Volume, Hiver, Forcé, Inactif.
     - 🧪 **Traitements** : Durées prédéfinies pour Chlore, Brome, etc.
+    - ⚡ **Consommation** : Suivi et notification de la consommation électrique (kWh) de la pompe de filtration et de la PAC (pompe à chaleur).
     - 📲 **Notifications** : Messages Telegram optimisés.
 
     <details>
@@ -23,11 +24,12 @@ blueprint:
       - `input_datetime` : "Piscine Début Cycle" (Format: Date et Heure)
       - `input_number` : "Piscine Durée Cycle" (Min: 0, Max: 86400)
       - `input_select` pour le mode contenant : "Filtration normale", "Filtration Volume", "Hivernage", "Forcé", "Inactif", et vos modes de traitement.
+    4. (Optionnel) Capteurs de consommation (kWh) de la pompe et de la PAC pour les notifications de suivi énergétique.
     </details>
 
   domain: automation
-  source_url: "https://github.com/Locodice67/pool-control-automation/blob/v1.2.1/blueprints/pool-control-automation.yaml"
-  version: "1.2.1"
+  source_url: "https://github.com/Locodice67/pool-control-automation/blob/v1.2.2/blueprints/pool-control-automation.yaml"
+  version: "1.2.2"
   input:
 
     # ==========================================
@@ -36,6 +38,16 @@ blueprint:
     pompe_switch:
       name: "Interrupteur de la Pompe"
       description: "L'interrupteur qui commande la mise en marche de la filtration."
+      selector:
+        entity:
+          filter:
+            - domain:
+                - switch
+
+    pac_switch:
+      name: "Interrupteur de la PAC (Pompe à Chaleur)"
+      description: "Interrupteur de la PAC, utilisé UNIQUEMENT pour détecter son démarrage et notifier sa consommation. ⚠️ Le blueprint ne commande JAMAIS la PAC (ni allumage ni arrêt)."
+      default: ""
       selector:
         entity:
           filter:
@@ -112,6 +124,23 @@ blueprint:
           default: "12:00:00"
           selector:
             time: {}
+
+        input_activation_tempo_temp:
+          name: "Activer la temporisation de température"
+          description: "Active une temporisation au début du cycle du matin pendant laquelle la durée n'est pas calculée selon la température (le temps que la sonde se stabilise)."
+          default: false
+          selector:
+            boolean: {}
+
+        input_duree_tempo_temp:
+          name: "Durée de temporisation température (min)"
+          description: "Durée d'attente (pompe en marche) au début du cycle du matin avant le calcul de la durée selon la température stabilisée."
+          default: 15
+          selector:
+            number:
+              min: 1
+              max: 120
+              unit_of_measurement: "min"
 
     # ==========================================
     # CATÉGORIE 3 : PARAMÈTRES DE FILTRATION
@@ -352,6 +381,32 @@ blueprint:
               step: 1.0
               unit_of_measurement: h
 
+    # ==========================================
+    # CATÉGORIE 7 : CONSOMMATION ÉLECTRIQUE
+    # ==========================================
+    section_consommation:
+      name: "Consommation Électrique"
+      icon: mdi:lightning-bolt
+      collapsed: true
+      input:
+        input_conso_pompe:
+          name: "Consommation Pompe (kWh)"
+          description: "Capteur d'énergie (kWh) mesurant la consommation de la pompe de filtration. Laisser vide pour désactiver le suivi."
+          default: ""
+          selector:
+            entity:
+              domain: sensor
+              device_class: energy
+
+        input_conso_pac:
+          name: "Consommation PAC (kWh)"
+          description: "Capteur d'énergie (kWh) mesurant la consommation de la pompe à chaleur. Laisser vide pour désactiver le suivi."
+          default: ""
+          selector:
+            entity:
+              domain: sensor
+              device_class: energy
+
 variables:
   mode_entity: !input input_select_mode
   pompe_switch: !input pompe_switch
@@ -365,7 +420,12 @@ variables:
   notify_service: !input notify_service
   heure_pause: !input input_heure_pause
   pause_active: !input input_activation_pause
+  tempo_temp_active: !input input_activation_tempo_temp
+  tempo_temp_duree: !input input_duree_tempo_temp
   coeff_ajustement: !input input_coefficient_ajustement
+  conso_pompe_entity: !input input_conso_pompe
+  conso_pac_entity: !input input_conso_pac
+  pac_switch: !input pac_switch
 
   volume_piscine: !input input_contenance_piscine
   debit_pompe: !input input_debit_pompe_piscine
@@ -391,6 +451,10 @@ variables:
   saison: "{{ states(saison_entity) | lower }}"
   mode_hiver: "{{ saison in ['winter', 'hiver'] }}"
   enable_notif: "{{ notify_service != '' }}"
+  enable_conso_pompe: "{{ conso_pompe_entity != '' }}"
+  enable_conso_pac: "{{ conso_pac_entity != '' }}"
+  conso_pompe_actuelle: "{{ states(conso_pompe_entity) | float(0) if enable_conso_pompe else 0 }}"
+  conso_pac_actuelle: "{{ states(conso_pac_entity) | float(0) if enable_conso_pac else 0 }}"
 
   mode_inconnu: >
     {% set modes_connus = ['Inactif', 'Forcé', 'Hivernage', 'Filtration normale', 'Filtration Volume', 'Chlore lent', 'Anti-calcaire préventif', 'Anti-calcaire curatif', 'Anti-algues préventif', 'Anti-algues curatif', 'Chlore choc', 'Oxygène actif', 'Floculant', 'pH+ ou pH-', 'Algicide longue durée', 'Traitement multi-actions', 'Brome', 'Électrolyse au sel'] %}
@@ -470,9 +534,37 @@ triggers:
     from: "on"
     to: "off"
     id: arret_manuel
+  - platform: state
+    entity_id: !input pac_switch
+    from: "off"
+    to: "on"
+    id: pac_demarrage
 
 actions:
   - choose:
+      # -----------------------------------------------------------
+      # 0. NOTIFICATION DÉMARRAGE PAC (notification seule, sans contrôle)
+      # -----------------------------------------------------------
+      - conditions:
+          - condition: trigger
+            id: pac_demarrage
+          - condition: template
+            value_template: "{{ enable_conso_pac }}"
+        sequence:
+          - choose:
+              - conditions: "{{ enable_notif }}"
+                sequence:
+                  - service: notify.send_message
+                    target:
+                      entity_id: "{{ notify_service }}"
+                    data:
+                      message: |
+                        ───────────────
+                        🔥 PAC démarrée
+                        ⚡ Conso PAC : {{ conso_pac_actuelle }} kWh
+                      title: "💧 Piscine"
+          - stop: "Notification démarrage PAC"
+
       # -----------------------------------------------------------
       # 1. ARRÊT MANUEL
       # -----------------------------------------------------------
@@ -576,6 +668,9 @@ actions:
           - service: switch.turn_off
             target:
               entity_id: "{{ pompe_switch }}"
+          - variables:
+              conso_pompe_fin: "{{ conso_pompe_actuelle }}"
+              conso_pac_fin: "{{ conso_pac_actuelle }}"
           - choose:
               - conditions: "{{ enable_notif }}"
                 sequence:
@@ -587,6 +682,9 @@ actions:
                         ───────────────
                         ✅ Cycle terminé !
                         🏊 Piscine propre !
+                        🌡️ Eau : {{ temp_piscine }}°C
+                        {% if enable_conso_pompe %}⚡ Conso Pompe : {{ conso_pompe_fin }} kWh{% endif %}{% if enable_conso_pac %}
+                        🔥 Conso PAC : {{ conso_pac_fin }} kWh{% endif %}
                       title: "💧 Piscine"
           - stop: "Reprise après reboot terminée"
 
@@ -612,14 +710,47 @@ actions:
           - service: input_boolean.turn_on
             target:
               entity_id: !input input_cycle_en_cours
+          - service: switch.turn_on
+            target:
+              entity_id: "{{ pompe_switch }}"
+
+          # ─ Temporisation de stabilisation de la sonde ─
+          # Si activée : pompe en marche pendant X min, puis la durée de filtration
+          # est recalculée sur la température stabilisée (remplace la durée calculée à chaud).
+          - if:
+              - condition: template
+                value_template: "{{ tempo_temp_active }}"
+            then:
+              - delay: "{{ tempo_temp_duree }}"
+              - variables:
+                  duree_secondes: |
+                    {% set m = states(mode_entity) %}
+                    {% set t = states(temp_sensor_entity) | float(-1) %}
+                    {% set s = states(saison_entity) | lower %}
+                    {% set cs = 1.2 if (s == 'summer' or s == 'ete') else (0.5 if (s == 'winter' or s == 'hiver') else (0.8 if (s == 'spring' or s == 'printemps') else 0.7)) %}
+                    {% if m == 'Inactif' %} {% set h = 0 %}
+                    {% elif m == 'Forcé' %} {% set h = 24 %}
+                    {% elif m == 'Hivernage' %} {% set h = (min_hiver | int / 60) | round(1) %}
+                    {% elif m == 'Filtration normale' %}
+                      {% if t < seuil_temp | float(12) %} {% set h = 0 %}
+                      {% else %} {% set h = (t / 2 * cs) | round(1) %} {% endif %}
+                    {% elif m == 'Filtration Volume' %}
+                      {% set v = volume_piscine | float %}{% set q = debit_pompe | float %}
+                      {% set cycles = 4 if t >= 28 else (3 if t >= 24 else (2 if t >= 18 else 1)) %}
+                      {% set h = (cycles * v / q) | round(1) %}
+                    {% else %}
+                      {% set dt = (t/2) if m == 'Chlore lent' else r_acp if m == 'Anti-calcaire préventif' else r_acc if m == 'Anti-calcaire curatif' else r_aap if m == 'Anti-algues préventif' else r_aac if m == 'Anti-algues curatif' else r_cc if m == 'Chlore choc' else r_oa if m == 'Oxygène actif' else r_f if m == 'Floculant' else r_ph if m == 'pH+ ou pH-' else r_alg_ld if m == 'Algicide longue durée' else r_ma if m == 'Traitement multi-actions' else r_brome if m == 'Brome' else r_sel if m == 'Électrolyse au sel' else 2 %}
+                      {% set h = (dt * cs) | round(1) %}
+                    {% endif %}
+                    {% set base_sec = (h | float * 3600) | int %}
+                    {{ (base_sec * (1 + (coeff_ajustement / 100))) | int }}
+
+          # ─ Fige la durée du cycle (recalculée si temporisation active, sinon durée d'origine) ─
           - service: input_number.set_value
             target:
               entity_id: !input input_duree_cycle
             data:
               value: "{{ duree_secondes }}"
-          - service: switch.turn_on
-            target:
-              entity_id: "{{ pompe_switch }}"
 
           # ─ Calculs de fin de cycle (déplacés hors du bloc notification) ─
           - variables:
@@ -665,8 +796,9 @@ actions:
                         ⚙️ Mode actuel : {{ mode }}
                         🌡️ Températures : Eau {{ temp_piscine }}°C | Ext {{ temp_exterieure }}°C
                         ⏱️ Planning : {{ debut_str }} → {{ fin_str }} ({{ duree_filtration_str }})
-                        {% if coeff_ajustement != 0 %}⚡ Ajustement : {{ coeff_ajustement }}%{% endif %}{% if pause_in_cycle %}
-                        ⏸️ Pause moteur prévue à {{ heure_pause }}{% endif %}
+                        {% if pause_in_cycle %}
+                        ⏸️ Pause moteur prévue à {{ heure_pause }}{% endif %}{% if coeff_ajustement != 0 %}
+                        ⚡ Ajustement : {{ coeff_ajustement }}%{% endif %}
                       title: "💧 Piscine"
                       
 
@@ -823,6 +955,7 @@ actions:
                             ───────────────
                             🔥 Prolongation du cycle
                             🌡️ Température en hausse, filtration supplémentaire
+                            🌡️ Eau : {{ t_now }}°C
                             ➕ Ajout : {{ (delta_time/60) | int }} min
                           title: "💧 Piscine"
 
@@ -836,6 +969,9 @@ actions:
           - service: switch.turn_off
             target:
               entity_id: "{{ pompe_switch }}"
+          - variables:
+              conso_pompe_fin: "{{ conso_pompe_actuelle }}"
+              conso_pac_fin: "{{ conso_pac_actuelle }}"
           - choose:
               - conditions: "{{ enable_notif }}"
                 sequence:
@@ -847,4 +983,7 @@ actions:
                         ───────────────
                         ✅ Cycle terminé !
                         🏊 Piscine propre !
+                        🌡️ Eau : {{ temp_piscine }}°C
+                        {% if enable_conso_pompe %}⚡ Conso Pompe : {{ conso_pompe_fin }} kWh{% endif %}{% if enable_conso_pac %}
+                        🔥 Conso PAC : {{ conso_pac_fin }} kWh{% endif %}
                       title: "💧 Piscine"
