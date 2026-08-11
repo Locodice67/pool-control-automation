@@ -1,61 +1,67 @@
 blueprint:
-  name: "ðŸ’§ Gestion Intelligente Piscine"
+  name: "💧 Gestion Intelligente Piscine v1.2.0"
   description: |
-    # ðŸ’§ Gestion AvancÃ©e de la Piscine
-    Une solution complÃ¨te pour automatiser la filtration, gÃ©rer les traitements et optimiser votre consommation Ã©lectrique.
+
+    # 💧 Gestion Avancée de la Piscine
+    Une solution complète pour automatiser la filtration, gérer les traitements et optimiser votre consommation électrique.
+
+    **Version: "1.2.0"**
     
-    ### ðŸš€ FonctionnalitÃ©s
-    - ðŸ• **Planification** : 2 cycles + Pause moteur configurable.
-    - ðŸŒ¡ï¸ **Modes** : Normal, Volume, Hiver, ForcÃ©, Inactif.
-    - ðŸ§ª **Traitements** : DurÃ©es prÃ©dÃ©finies pour Chlore, Brome, etc.
-    - ðŸ“² **Notifications** : Messages Telegram optimisÃ©s.
-    
+    ### 🚀 Fonctionnalités
+    - 🕐 **Planification** : Cycle matinal + Pause moteur + Recalcul automatique.
+    - 🌡️ **Modes** : Normal, Volume, Hiver, Forcé, Inactif.
+    - 🧪 **Traitements** : Durées prédéfinies pour Chlore, Brome, etc.
+    - 📲 **Notifications** : Messages Telegram optimisés.
+
     <details>
-    <summary><strong>âš™ï¸ PrÃ©requis et Recommandations</strong></summary>
-    
-    1. EntitÃ© de la Pompe de filtration (Switch).
-    2. Sonde de tempÃ©rature de l'eau.
-    3. CrÃ©ez 3 helpers dans HA :
-       - `input_boolean` : "Piscine Cycle En Cours"
-       - `input_datetime` : "Piscine DÃ©but Cycle" (Format: Date et Heure)
-       - `input_number` : "Piscine DurÃ©e Cycle" (Min: 0, Max: 86400)
-       - `input_select` pour le mode contenant : "Filtration normale", "Filtration Volume", "Hivernage", "ForcÃ©", "Inactif", et vos modes de traitement.
+    <summary><strong>⚙️ Prérequis et Recommandations</strong></summary>
+
+    1. Entité de la Pompe de filtration (Switch).
+    2. Sonde de température de l'eau.
+    3. Créez 3 helpers dans HA :
+      - `input_boolean` : "Piscine Cycle En Cours"
+      - `input_datetime` : "Piscine Début Cycle" (Format: Date et Heure)
+      - `input_number` : "Piscine Durée Cycle" (Min: 0, Max: 86400)
+      - `input_select` pour le mode contenant : "Filtration normale", "Filtration Volume", "Hivernage", "Forcé", "Inactif", et vos modes de traitement.
     </details>
 
   domain: automation
-  source_url: "https://github.com/Locodice67/pool-control-automation/blob/v1.1.0/blueprints/pool-control-automation.yaml"
-  version: "1.1.0"
+  source_url: "https://github.com/Locodice67/pool-control-automation/blob/v1.2.0/blueprints/pool-control-automation.yaml"
+  version: "1.2.0"
   input:
-    
+
     # ==========================================
-    # Ã‰LÃ‰MENT PRINCIPAL (NON REPLIÃ‰)
+    # ÉLÉMENT PRINCIPAL (NON REPLIÉ)
     # ==========================================
     pompe_switch:
       name: "Interrupteur de la Pompe"
       description: "L'interrupteur qui commande la mise en marche de la filtration."
       selector:
         entity:
-          domain: switch
+          filter:
+            - domain:
+                - switch
 
     # ==========================================
-    # CATÃ‰GORIE 1 : CAPTEURS & SÃ‰LECTEURS
+    # CATÉGORIE 1 : CAPTEURS & SÉLECTEURS
     # ==========================================
     section_capteurs:
-      name: "Capteurs & SÃ©lecteurs"
+      name: "Capteurs & Sélecteurs"
       icon: mdi:thermometer-water
       collapsed: true
       input:
         input_temperature_piscine:
-          name: "TempÃ©rature de l'Eau"
-          description: "Sonde de tempÃ©rature mesurant l'eau du bassin."
+          name: "Température de l'Eau"
+          description: "Sonde de température mesurant l'eau du bassin."
           selector:
             entity:
               domain: sensor
               device_class: temperature
 
+
         input_temperature_exterieure:
-          name: "TempÃ©rature ExtÃ©rieure"
-          description: "Sonde de tempÃ©rature de l'air ambiant."
+          name: "Température Extérieure"
+          description: "Sonde de température de l'air ambiant."
           selector:
             entity:
               domain: sensor
@@ -64,19 +70,22 @@ blueprint:
         input_saison_sensor:
           name: "Saison"
           description: "Capteur fournissant la saison actuelle (ex: integrations seasons)."
+          default: "sensor.season"
           selector:
             entity:
-              domain: sensor
+              filter:
+                - domain:
+                    - sensor
 
         input_select_mode:
-          name: "SÃ©lecteur de Mode"
-          description: "Liste dÃ©roulante permettant de choisir le mode de filtration ou le traitement en cours."
+          name: "Sélecteur de Mode"
+          description: "Liste déroulante permettant de choisir le mode de filtration ou le traitement en cours."
           selector:
             entity:
               domain: input_select
 
     # ==========================================
-    # CATÃ‰GORIE 2 : PLANIFICATION & HORAIRES
+    # CATÉGORIE 2 : PLANIFICATION & HORAIRES
     # ==========================================
     section_planification:
       name: "Planification & Horaires"
@@ -84,16 +93,9 @@ blueprint:
       collapsed: true
       input:
         input_heure_cycle_matin:
-          name: "Heure de DÃ©marrage (Matin)"
-          description: "Heure Ã  laquelle le cycle principal doit se dÃ©clencher."
-          default: "08:00:00"
-          selector:
-            time: {}
-
-        input_heure_controle:
-          name: "Heure de ContrÃ´le (AprÃ¨s-midi)"
-          description: "Heure de verification automatique en apres-midi (necessite activation ci-dessous)."
-          default: "14:00:00"
+          name: "Heure de Démarrage (Matin)"
+          description: "Heure à laquelle le cycle principal doit se déclencher."
+          default: "09:00:00"
           selector:
             time: {}
 
@@ -104,61 +106,54 @@ blueprint:
           selector:
             boolean: {}
 
-        input_activation_controle:
-          name: "Activer le Controle Apres-midi"
-          description: "Cocher pour activer la verification automatique en apres-midi."
-          default: false
-          selector:
-            boolean: {}
-
         input_heure_pause:
           name: "Heure de la Pause Moteur"
-          description: "Moment de la coupure si la pause est activÃ©e."
-          default: "14:00:00"
+          description: "Moment de la coupure si la pause est activée."
+          default: "12:00:00"
           selector:
             time: {}
 
     # ==========================================
-    # CATÃ‰GORIE 3 : PARAMÃˆTRES DE FILTRATION
+    # CATÉGORIE 3 : PARAMÈTRES DE FILTRATION
     # ==========================================
     section_parametres:
-      name: "ParamÃ¨tres de Filtration"
+      name: "Paramètres de Filtration"
       icon: mdi:cog-outline
       collapsed: true
       input:
         input_contenance_piscine:
-          name: "Volume du bassin (mÂ³)"
+          name: "Volume du bassin (m³)"
           description: "Volume total d'eau de la piscine (utile pour le mode 'Filtration Volume')."
           default: 40
           selector:
             number:
               min: 1
               max: 200
-              unit_of_measurement: "mÂ³"
+              unit_of_measurement: "m³"
 
         input_debit_pompe_piscine:
-          name: "DÃ©bit de la pompe (mÂ³/h)"
-          description: "DÃ©bit de filtration de votre pompe."
-          default: 10
+          name: "Débit de la pompe (m³/h)"
+          description: "Débit de filtration de votre pompe."
+          default: 15
           selector:
             number:
               min: 1
               max: 50
-              unit_of_measurement: "mÂ³/h"
+              unit_of_measurement: "m³/h"
 
         input_seuil_temperature:
-          name: "Seuil Minimum de tempÃ©rature (Â°C)"
-          description: "TempÃ©rature en dessous de laquelle la filtration ne se dÃ©clenche pas (hors mode ForcÃ©/Hiver)."
+          name: "Seuil Minimum de température (°C)"
+          description: "Température en dessous de laquelle la filtration ne se déclenche pas (hors mode Forcé/Hiver)."
           default: 12
           selector:
             number:
               min: 0
-              max: 40
-              unit_of_measurement: "Â°C"
+              max: 30
+              unit_of_measurement: "°C"
 
         input_filtration_minimale_hiver:
-          name: "DurÃ©e Minimale Hiver (min)"
-          description: "DurÃ©e de filtration appliquÃ©e en mode Hivernage."
+          name: "Durée Minimale Hiver (min)"
+          description: "Durée de filtration appliquée en mode Hivernage. ⚠️ À 0, la filtration hivernale est désactivée (cycle non lancé)."
           default: 30
           selector:
             number:
@@ -168,7 +163,7 @@ blueprint:
 
         input_coefficient_ajustement:
           name: "Ajustement Manuel (%)"
-          description: "Augmente ou rÃ©duit la durÃ©e calculÃ©e (ex: +10% pour une piscine trÃ¨s exposÃ©e)."
+          description: "Augmente ou réduit la durée calculée (ex: +10% pour une piscine très exposée)."
           default: 0
           selector:
             number:
@@ -178,36 +173,43 @@ blueprint:
               step: 5
 
     # ==========================================
-    # CATÃ‰GORIE 4 : HELPERS INTERNES
+    # CATÉGORIE 4 : HELPERS INTERNES
     # ==========================================
     section_helpers:
-      name: "Helpers Internes (SystÃ¨me)"
+      name: "Helpers Internes (Système)"
       icon: mdi:database-cog
       collapsed: true
       input:
         input_duree_cycle:
-          name: "Helper DurÃ©e (input_number)"
-          description: "EntitÃ© input_number pour mÃ©moriser la durÃ©e calculÃ©e du cycle en cours."
+          name: "Helper Durée (input_number)"
+          description: "Entité input_number pour mémoriser la durée calculée du cycle en cours. ⚠️ Prérequis : Min: 0, Max: ≥ 86400 (24 h), sinon le recalcul en mode « Forcé » sera écrêté silencieusement."
           selector:
             entity:
               domain: input_number
 
         input_cycle_start:
-          name: "Helper DÃ©but (input_datetime)"
-          description: "EntitÃ© input_datetime mÃ©morisant l'heure de dÃ©but du cycle."
+          name: "Helper Début (input_datetime)"
+          description: "Entité input_datetime mémorisant l'heure de début du cycle."
           selector:
             entity:
               domain: input_datetime
 
         input_cycle_en_cours:
           name: "Helper Etat (input_boolean)"
-          description: "EntitÃ© input_boolean indiquant si un cycle est actif."
+          description: "Entité input_boolean indiquant si un cycle est actif."
           selector:
             entity:
               domain: input_boolean
 
+        input_fin_cycle:
+          name: "Helper Fin de Cycle (input_datetime)"
+          description: "Entité input_datetime mise à jour avec l'heure de fin calculée du cycle."
+          selector:
+            entity:
+              domain: input_datetime
+
     # ==========================================
-    # CATÃ‰GORIE 5 : NOTIFICATIONS
+    # CATÉGORIE 5 : NOTIFICATIONS
     # ==========================================
     section_notifications:
       name: "Notifications"
@@ -216,22 +218,22 @@ blueprint:
       input:
         notify_service:
           name: "Service de Notification"
-          description: "EntitÃ© de notification (ex: Telegram) pour recevoir les alertes. Laisser vide pour dÃ©sactiver."
+          description: "Entité de notification pour recevoir les alertes. Laisser vide pour désactiver."
           default: ""
           selector:
             entity:
               domain: notify
 
     # ==========================================
-    # CATÃ‰GORIE 6 : TRAITEMENTS CHIMIQUES
+    # CATÉGORIE 6 : TRAITEMENTS CHIMIQUES
     # ==========================================
     section_traitements:
-      name: "RÃ©glages des Traitements Chimiques"
+      name: "Réglages des Traitements Chimiques"
       icon: mdi:flask-outline
       collapsed: true
       input:
         reglage_anti_calcaire_preventif:
-          name: "Anti-calcaire PrÃ©ventif (h)"
+          name: "Anti-calcaire Préventif (h)"
           default: 11
           selector:
             number:
@@ -251,7 +253,7 @@ blueprint:
               unit_of_measurement: h
 
         reglage_anti_algues_preventif:
-          name: "Anti-algues PrÃ©ventif (h)"
+          name: "Anti-algues Préventif (h)"
           default: 5
           selector:
             number:
@@ -281,7 +283,7 @@ blueprint:
               unit_of_measurement: h
 
         reglage_oxygene_actif:
-          name: "OxygÃ¨ne Actif (h)"
+          name: "Oxygène Actif (h)"
           default: 9
           selector:
             number:
@@ -311,7 +313,7 @@ blueprint:
               unit_of_measurement: h
 
         reglage_algicide_ld:
-          name: "Algicide Longue DurÃ©e (h)"
+          name: "Algicide Longue Durée (h)"
           default: 7
           selector:
             number:
@@ -341,7 +343,7 @@ blueprint:
               unit_of_measurement: h
 
         reglage_sel:
-          name: "Ã‰lectrolyse au Sel (h)"
+          name: "Électrolyse au Sel (h)"
           default: 18
           selector:
             number:
@@ -349,6 +351,7 @@ blueprint:
               max: 24.0
               step: 1.0
               unit_of_measurement: h
+
 variables:
   mode_entity: !input input_select_mode
   pompe_switch: !input pompe_switch
@@ -358,10 +361,10 @@ variables:
   cycle_start_entity: !input input_cycle_start
   duree_cycle_entity: !input input_duree_cycle
   cycle_en_cours_entity: !input input_cycle_en_cours
+  fin_cycle_entity: !input input_fin_cycle
   notify_service: !input notify_service
   heure_pause: !input input_heure_pause
   pause_active: !input input_activation_pause
-  enable_controle: !input input_activation_controle
   coeff_ajustement: !input input_coefficient_ajustement
 
   volume_piscine: !input input_contenance_piscine
@@ -389,7 +392,12 @@ variables:
   mode_hiver: "{{ saison in ['winter', 'hiver'] }}"
   enable_notif: "{{ notify_service != '' }}"
 
+  mode_inconnu: >
+    {% set modes_connus = ['Inactif', 'Forcé', 'Hivernage', 'Filtration normale', 'Filtration Volume', 'Chlore lent', 'Anti-calcaire préventif', 'Anti-calcaire curatif', 'Anti-algues préventif', 'Anti-algues curatif', 'Chlore choc', 'Oxygène actif', 'Floculant', 'pH+ ou pH-', 'Algicide longue durée', 'Traitement multi-actions', 'Brome', 'Électrolyse au sel'] %}
+    {{ mode not in modes_connus }}
+
   coefficient_saison: >
+    {# En mode Hivernage, durée forcée à min_hiver/60 : ce coefficient n'affecte que les autres modes. #}
     {% if saison == 'summer' or saison == 'ete' %} 1.2
     {% elif saison == 'winter' or saison == 'hiver' %} 0.5
     {% elif saison == 'spring' or saison == 'printemps' %} 0.8
@@ -401,13 +409,16 @@ variables:
     {% set m = mode %}
     {% if m == 'Inactif' %}
       0
-    {% elif m == 'ForcÃ©' %}
+    {% elif m == 'Forcé' %}
       24
-    {% elif m == 'Hivernage' or mode_hiver %}
-      {# Note: mode_hiver force la filtration hivernale meme si le mode selectionne est different #}
+    {% elif m == 'Hivernage' %}
       {{ (min_hiver | int / 60) | round(1) }}
     {% elif m == 'Filtration normale' %}
-      {{ (temp_piscine / 2 * coefficient_saison) | round(1) }}
+      {% if temp_piscine | float(-1) < seuil_temp | float(12) %}
+        0
+      {% else %}
+        {{ (temp_piscine / 2 * coefficient_saison) | round(1) }}
+      {% endif %}
     {% elif m == 'Filtration Volume' %}
       {% set v = volume_piscine | float %}
       {% set q = debit_pompe | float %}
@@ -426,18 +437,18 @@ variables:
     {% else %}
       {% set duree_temp = (
         (temp_piscine / 2) if m == 'Chlore lent' else
-        r_acp if m == 'Anti-calcaire prÃ©ventif' else
+        r_acp if m == 'Anti-calcaire préventif' else
         r_acc if m == 'Anti-calcaire curatif' else
-        r_aap if m == 'Anti-algues prÃ©ventif' else
+        r_aap if m == 'Anti-algues préventif' else
         r_aac if m == 'Anti-algues curatif' else
         r_cc if m == 'Chlore choc' else
-        r_oa if m == 'OxygÃ¨ne actif' else
+        r_oa if m == 'Oxygène actif' else
         r_f if m == 'Floculant' else
         r_ph if m == 'pH+ ou pH-' else
-        r_alg_ld if m == 'Algicide longue durÃ©e' else
+        r_alg_ld if m == 'Algicide longue durée' else
         r_ma if m == 'Traitement multi-actions' else
         r_brome if m == 'Brome' else
-        r_sel if m == 'Ã‰lectrolyse au sel' else 2
+        r_sel if m == 'Électrolyse au sel' else 2
       ) | float(0) %}
       {{ (duree_temp * coefficient_saison) | round(1) }}
     {% endif %}
@@ -446,14 +457,11 @@ variables:
     {% set base_sec = (duree_heures_calc | float * 3600) | int %}
     {{ (base_sec * (1 + (coeff_ajustement / 100))) | int }}
 
-mode: queued
+mode: parallel
 triggers:
   - platform: time
     at: !input input_heure_cycle_matin
     id: cycle_matin
-  - platform: time
-    at: !input input_heure_controle
-    id: controle_aprem
   - platform: homeassistant
     event: start
     id: startup
@@ -466,7 +474,7 @@ triggers:
 actions:
   - choose:
       # -----------------------------------------------------------
-      # 1. ARRÃŠT MANUEL
+      # 1. ARRÊT MANUEL
       # -----------------------------------------------------------
       - conditions:
           - condition: trigger
@@ -474,28 +482,28 @@ actions:
           - condition: state
             entity_id: !input input_cycle_en_cours
             state: "on"
+          - condition: template
+            value_template: >
+              {% set now_ts = as_timestamp(now()) %}
+              {% set pt = as_timestamp(today_at(heure_pause)) %}
+              {{ not (pause_active and pt and now_ts >= pt and now_ts < (pt + 3600)) }}
         sequence:
-          - service: input_boolean.turn_off
-            target:
-              entity_id: !input input_cycle_en_cours
           - choose:
               - conditions: "{{ enable_notif }}"
                 sequence:
-              - action: notify.send_message
-                target:
-                  entity_id: "{{ notify_service }}"
-                data:
-                  message: |
-                        <b>ðŸ’§ Piscine</b>
-                        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                        âš ï¸ <b>ArrÃªt manuel</b>
-                        ðŸ•’ Interruption du cycle Ã  {{ now().strftime('%H:%M') }}
-
-                  title: "ðŸ’§ Piscine"
-          - stop: "ArrÃªt manuel"
+                  - service: notify.send_message
+                    target:
+                      entity_id: "{{ notify_service }}"
+                    data:
+                      message: |
+                        ───────────────
+                        ⚠️ Arrêt manuel
+                        🕒 Pompe arrêtée à {{ now().strftime('%H:%M') }} (cycle en cours non interrompu)
+                      title: "💧 Piscine"
+          - stop: "Arrêt manuel (notification seule, cycle non interrompu)"
 
       # -----------------------------------------------------------
-      # 2. REDÃ‰MARRAGE HA (Silencieux)
+      # 2. REDÉMARRAGE HA (Silencieux)
       # -----------------------------------------------------------
       - conditions:
           - condition: trigger
@@ -505,18 +513,44 @@ actions:
             state: "on"
         sequence:
           - variables:
-              start_ts: "{{ as_timestamp(states(cycle_start_entity)) }}"
+              start_ts_raw: "{{ as_timestamp(states(cycle_start_entity)) }}"
+              # Garde : helper de début réinitialisé → start_ts = 0 (aucune erreur Jinja)
+              start_ts: "{{ start_ts_raw if start_ts_raw is not none else 0 }}"
               duration_val: "{{ states(duree_cycle_entity) | float(0) }}"
               now_ts: "{{ as_timestamp(now()) }}"
-              pause_ts: "{{ as_timestamp(today_at(heure_pause)) }}"
-              pause_end_ts: "{{ pause_ts + 3600 }}"
+              pause_ts: >
+                {% set pt_today = as_timestamp(today_at(heure_pause)) %}
+                {% if start_ts and pt_today and (now_ts - start_ts) > 86400 and pt_today > now_ts %}
+                  {{ pt_today - 86400 }}
+                {% else %}
+                  {{ pt_today }}
+                {% endif %}
+              pause_end_ts: "{{ (pause_ts | float(0)) + 3600 }}"
               real_pump_elapsed: >
                 {% if pause_active and now_ts >= pause_end_ts %} {{ (now_ts - start_ts) - 3600 }}
                 {% elif pause_active and now_ts >= pause_ts %} {{ pause_ts - start_ts }}
                 {% else %} {{ now_ts - start_ts }}
                 {% endif %}
               remaining_pump_time: "{{ [0, duration_val - (real_pump_elapsed | float)] | max | int }}"
-              
+
+          # Reset propre si l'état des helpers est incohérent (cycle "on" sans heure de début valide)
+          - if:
+              - condition: template
+                value_template: "{{ start_ts_raw is none or start_ts_raw == 0 }}"
+            then:
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: !input input_cycle_en_cours
+              - service: switch.turn_off
+                target:
+                  entity_id: "{{ pompe_switch }}"
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: !input input_cycle_start
+                data:
+                  datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+              - stop: "Cycle incohérent réinitialisé après reboot"
+
           - choose:
               - conditions: "{{ pause_active and now_ts >= pause_ts and now_ts < pause_end_ts and remaining_pump_time > 0 }}"
                 sequence:
@@ -528,7 +562,7 @@ actions:
                     target:
                       entity_id: "{{ pompe_switch }}"
                   - delay: "{{ remaining_pump_time }}"
-                  
+
               - conditions: "{{ remaining_pump_time > 0 }}"
                 sequence:
                   - service: switch.turn_on
@@ -536,27 +570,25 @@ actions:
                       entity_id: "{{ pompe_switch }}"
                   - delay: "{{ remaining_pump_time }}"
 
-          - service: switch.turn_off
-            target:
-              entity_id: "{{ pompe_switch }}"
           - service: input_boolean.turn_off
             target:
               entity_id: !input input_cycle_en_cours
+          - service: switch.turn_off
+            target:
+              entity_id: "{{ pompe_switch }}"
           - choose:
               - conditions: "{{ enable_notif }}"
                 sequence:
-              - action: notify.send_message
-                target:
-                  entity_id: "{{ notify_service }}"
-                data:
-                  message: |
-                        <b>ðŸ’§ Piscine</b>
-                        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                        âœ… Cycle terminÃ© !
-                        ðŸŠ Piscine propre !
-
-                  title: "ðŸ’§ Piscine"
-          - stop: "Reprise aprÃ¨s reboot terminÃ©e"
+                  - service: notify.send_message
+                    target:
+                      entity_id: "{{ notify_service }}"
+                    data:
+                      message: |
+                        ───────────────
+                        ✅ Cycle terminé !
+                        🏊 Piscine propre !
+                      title: "💧 Piscine"
+          - stop: "Reprise après reboot terminée"
 
       # -----------------------------------------------------------
       # 3. LANCEMENT CYCLE (MATIN)
@@ -564,10 +596,14 @@ actions:
       - conditions:
           - condition: trigger
             id: cycle_matin
+          # Garde anti-run concurrent : aucun cycle déjà actif en mode parallel
+          - condition: state
+            entity_id: !input input_cycle_en_cours
+            state: "off"
         sequence:
           - condition: template
             value_template: "{{ duree_secondes | int > 0 }}"
-            
+
           - service: input_datetime.set_datetime
             target:
               entity_id: !input input_cycle_start
@@ -584,36 +620,67 @@ actions:
           - service: switch.turn_on
             target:
               entity_id: "{{ pompe_switch }}"
-          
+
+          # ─ Calculs de fin de cycle (déplacés hors du bloc notification) ─
+          - variables:
+              pause_in_cycle: "{{ pause_active and (as_timestamp(today_at(heure_pause)) - as_timestamp(now())) > 0 and (as_timestamp(today_at(heure_pause)) - as_timestamp(now())) < duree_secondes }}"
+              duree_affichee_sec: "{{ (duree_secondes + (3600 if pause_in_cycle else 0)) | int }}"
+              debut_str: "{{ now().strftime('%H:%M') }}"
+              fin_datetime: "{{ (now() + timedelta(seconds=duree_affichee_sec)).strftime('%Y-%m-%d %H:%M:%S') }}"
+              # fin_str = HH:MM extrait de la datetime complète (gère le passage minuit)
+              fin_str: "{{ fin_datetime[11:16] }}"
+              duree_h: "{{ (duree_affichee_sec/3600) | round(1) }}"
+
+          # ─ Met à jour le helper input_datetime de fin de cycle ─
+          # Ce changement d'état déclenche le blueprint de contrôle PAC/résistance
+          - if:
+              - condition: template
+                value_template: "{{ fin_cycle_entity is not none and fin_cycle_entity != '' }}"
+            then:
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: "{{ fin_cycle_entity }}"
+                data:
+                  datetime: "{{ fin_datetime }}"
+
+          # ─ Notification de démarrage ─
           - choose:
               - conditions: "{{ enable_notif }}"
                 sequence:
-                  - variables:
-                      pause_in_cycle: "{{ pause_active and (as_timestamp(today_at(heure_pause)) - as_timestamp(now())) > 0 and (as_timestamp(today_at(heure_pause)) - as_timestamp(now())) < duree_secondes }}"
-                      duree_affichee_sec: "{{ (duree_secondes + (3600 if pause_in_cycle else 0)) | int }}"
-                      debut_str: "{{ now().strftime('%H:%M') }}"
-                      fin_str: "{{ (now() + timedelta(seconds=duree_affichee_sec)).strftime('%H:%M') }}"
-                      duree_h: "{{ (duree_affichee_sec/3600) | round(1) }}"
-              - action: notify.send_message
-                target:
-                  entity_id: "{{ notify_service }}"
-                data:
-                  message: |
-                        <b>ðŸ’§ Piscine</b>
-                        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                        âš™ï¸ Mode actuel : <b>{{ mode }}</b>
-                        ðŸŒ¡ï¸ TempÃ©ratures : Eau {{ temp_piscine }}Â°C | Ext {{ temp_exterieure }}Â°C
-                        â±ï¸ Planning : {{ debut_str }} â†’ {{ fin_str }} ({{ duree_h }}h)
-                        {% if coeff_ajustement != 0 %}âš¡ Ajustement : <b>{{ coeff_ajustement }}%</b>{% endif %}
-                        {% if pause_in_cycle %}â¸ï¸ Pause moteur prÃ©vue Ã  <b>{{ heure_pause }}</b>{% endif %}
+                  - service: notify.send_message
+                    target:
+                      entity_id: "{{ notify_service }}"
+                    data:
+                      message: |
+                        ───────────────
+                        ⚙️ Mode actuel : {{ mode }}
+                        🌡️ Températures : Eau {{ temp_piscine }}°C | Ext {{ temp_exterieure }}°C
+                        ⏱️ Planning : {{ debut_str }} → {{ fin_str }} ({{ duree_h }}h)
+                        {% if coeff_ajustement != 0 %}⚡ Ajustement : {{ coeff_ajustement }}%{% endif %}
+                        {% if pause_in_cycle %}⏸️ Pause moteur prévue à {{ heure_pause }}{% endif %}
+                      title: "💧 Piscine"
+                      
 
-                  title: "ðŸ’§ Piscine"
+          # ─ Notification mode indisponible (filtration de secours de 2 h explicite) ─
+          - choose:
+              - conditions: "{{ enable_notif and mode_inconnu }}"
+                sequence:
+                  - service: notify.send_message
+                    target:
+                      entity_id: "{{ notify_service }}"
+                    data:
+                      message: |
+                        ───────────────
+                        ⚠️ Mode indisponible
+                        Mode « {{ mode }} » non reconnu : filtration de secours de 2 h appliquée.
+                        🔧 Vérifiez le sélecteur de mode.
+                      title: "💧 Piscine"
 
           - variables:
               pause_ts: "{{ as_timestamp(today_at(heure_pause)) }}"
               now_ts: "{{ as_timestamp(now()) }}"
               time_before_pause: "{{ (pause_ts - now_ts) | int }}"
-          
+
           - choose:
               - conditions: "{{ pause_active and time_before_pause > 0 and time_before_pause < duree_secondes }}"
                 sequence:
@@ -624,17 +691,15 @@ actions:
                   - choose:
                       - conditions: "{{ enable_notif }}"
                         sequence:
-                      - action: notify.send_message
-                        target:
-                          entity_id: "{{ notify_service }}"
-                        data:
-                          message: |
-                                <b>ðŸ’§ Piscine</b>
-                                â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                                âš ï¸ ArrÃªt sÃ©curitÃ© de 1h
-                                â–¶ï¸ Reprise automatique Ã  <b>{{ (now() + timedelta(hours=1)).strftime('%H:%M') }}</b>
-
-                          title: "ðŸ’§ Piscine"
+                          - service: notify.send_message
+                            target:
+                              entity_id: "{{ notify_service }}"
+                            data:
+                              message: |
+                                ───────────────
+                                ⚠️ Arrêt sécurité de 1h
+                                ▶️ Reprise automatique à {{ (now() + timedelta(hours=1)).strftime('%H:%M') }}
+                              title: "💧 Piscine"  
                   - delay: "01:00:00"
                   - service: switch.turn_on
                     target:
@@ -642,114 +707,146 @@ actions:
                   - choose:
                       - conditions: "{{ enable_notif }}"
                         sequence:
-                      - action: notify.send_message
-                        target:
-                          entity_id: "{{ notify_service }}"
-                        data:
-                          message: |
-                                <b>ðŸ’§ Piscine</b>
-                                â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                                âœ… Fin de la pause moteur
-                                â–¶ï¸ Filtration reprise
-
-                          title: "ðŸ’§ Piscine"
+                          - service: notify.send_message
+                            target:
+                              entity_id: "{{ notify_service }}"
+                            data:
+                              message: |
+                                ───────────────
+                                ✅ Fin de la pause moteur
+                                ▶️ Filtration reprise
+                              title: "💧 Piscine"
                   - variables:
                       remaining_time: "{{ duree_secondes - time_before_pause - 3600 }}"
                   - delay: "{{ [0, remaining_time | int] | max }}"
             default:
               - delay: "{{ duree_secondes }}"
 
-          - service: switch.turn_off
-            target:
-              entity_id: "{{ pompe_switch }}"
+          # ─ FIN DU CYCLE PRINCIPAL ─
+          # (cycle marqué terminé avant l'extinction pompe : évite un faux "arrêt manuel" en mode parallel)
           - service: input_boolean.turn_off
             target:
               entity_id: !input input_cycle_en_cours
+          - service: switch.turn_off
+            target:
+              entity_id: "{{ pompe_switch }}"
           - choose:
               - conditions: "{{ enable_notif }}"
                 sequence:
-              - action: notify.send_message
-                target:
-                  entity_id: "{{ notify_service }}"
-                data:
-                  message: |
-                        <b>ðŸ’§ Piscine</b>
-                        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                        âœ… Cycle terminÃ© !
-                        ðŸŠ Piscine propre !
-
-                  title: "ðŸ’§ Piscine"
-
-
-      # -----------------------------------------------------------
-      # 4. CONTRÃ”LE APRÃˆS-MIDI
-      # -----------------------------------------------------------
-      - conditions:
-          - condition: trigger
-            id: controle_aprem
-          - condition: state
-            entity_id: !input pompe_switch
-            state: "off"
-          - condition: template
-            value_template: "{{ enable_controle }}"
-        sequence:
-          - variables:
-              duree_matin: "{{ states(duree_cycle_entity) | float(0) }}"
-              delta_time_raw: "{{ duree_secondes - duree_matin }}"
-              delta_time: "{{ [0, [delta_time_raw | int, 28800] | min] | max }}"
-          - choose:
-              - conditions: "{{ delta_time | float > 300 }}"
-                sequence:
-                  - service: input_datetime.set_datetime
-                    target:
-                      entity_id: !input input_cycle_start
-                    data:
-                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-                  - service: input_boolean.turn_on
-                    target:
-                      entity_id: !input input_cycle_en_cours
-                  - service: switch.turn_on
-                    target:
-                      entity_id: "{{ pompe_switch }}"
-                  - choose:
-                      - conditions: "{{ enable_notif }}"
-                        sequence:
-                      - action: notify.send_message
-                        target:
-                          entity_id: "{{ notify_service }}"
-                        data:
-                          message: |
-                                <b>ðŸ’§ Piscine</b>
-                                â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                                ðŸ”¥ ContrÃ´le aprÃ¨s-midi
-                                ðŸŒ¡ï¸ L'eau a chauffÃ©, cycle supplÃ©mentaire
-                                âž• Ajout : <b>{{ (delta_time/60) | int }} min</b>
-
-                          title: "ðŸ’§ Piscine"
-                  - delay: "{{ delta_time | int }}"
-                  - service: switch.turn_off
-                    target:
-                      entity_id: "{{ pompe_switch }}"
-                  - service: input_boolean.turn_off
-                    target:
-                      entity_id: !input input_cycle_en_cours
-            default:
-              - choose:
-                  - conditions: "{{ enable_notif }}"
-                    sequence:
-                  - action: notify.send_message
+                  - service: notify.send_message
                     target:
                       entity_id: "{{ notify_service }}"
                     data:
                       message: |
-                            <b>ðŸ’§ Piscine</b>
-                            â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                            âœ… VÃ©rification aprÃ¨s-midi
-                            ðŸ‘ Filtration du matin suffisante
-                            
+                        ───────────────
+                        ✅ Cycle terminé !
+                        🏊 Piscine propre !
+                      title: "💧 Piscine"
 
-                      title: "ðŸ’§ Piscine"
+          # ─ Recalcul après cycle ─
+          # Les variables globales du blueprint sont figées au démarrage du run :
+          # on recalcule donc la durée avec les valeurs LIVE des entités.
+          - variables:
+              duree_matin: "{{ states(duree_cycle_entity) | float(0) }}"
+              m_now: "{{ states(mode_entity) }}"
+              t_now: "{{ states(temp_sensor_entity) | float(-1) }}"
+              s_now: "{{ states(saison_entity) | lower }}"
+              c_saison_now: >
+                {% if s_now == 'summer' or s_now == 'ete' %}1.2
+                {% elif s_now == 'winter' or s_now == 'hiver' %}0.5
+                {% elif s_now == 'spring' or s_now == 'printemps' %}0.8
+                {% elif s_now == 'autumn' or s_now == 'automne' %}0.7
+                {% else %}0.7{% endif %}
+              duree_now_h: |
+                {% if m_now == 'Inactif' %} 0
+                {% elif m_now == 'Forcé' %} 24
+                {% elif m_now == 'Hivernage' %} {{ (min_hiver | int / 60) | round(1) }}
+                {% elif m_now == 'Filtration normale' %}
+                  {% if t_now | float(-1) < seuil_temp | float(12) %} 0
+                  {% else %} {{ (t_now / 2 * c_saison_now) | round(1) }}
+                  {% endif %}
+                {% elif m_now == 'Filtration Volume' %}
+                  {% set v = volume_piscine | float %}
+                  {% set q = debit_pompe | float %}
+                  {% if q <= 0 %} 0
+                  {% else %}
+                    {% set cycles = 4 if t_now >= 28 else (3 if t_now >= 24 else (2 if t_now >= 18 else 1)) %}
+                    {{ (cycles * v / q) | round(1) }}
+                  {% endif %}
+                {% else %}
+                  {% set dt = (
+                    (t_now / 2) if m_now == 'Chlore lent' else
+                    r_acp if m_now == 'Anti-calcaire préventif' else
+                    r_acc if m_now == 'Anti-calcaire curatif' else
+                    r_aap if m_now == 'Anti-algues préventif' else
+                    r_aac if m_now == 'Anti-algues curatif' else
+                    r_cc if m_now == 'Chlore choc' else
+                    r_oa if m_now == 'Oxygène actif' else
+                    r_f if m_now == 'Floculant' else
+                    r_ph if m_now == 'pH+ ou pH-' else
+                    r_alg_ld if m_now == 'Algicide longue durée' else
+                    r_ma if m_now == 'Traitement multi-actions' else
+                    r_brome if m_now == 'Brome' else
+                    r_sel if m_now == 'Électrolyse au sel' else 2
+                  ) | float(0) %}
+                  {{ (dt * c_saison_now) | round(1) }}
+                {% endif %}
+              duree_now_sec: "{{ (duree_now_h | float * 3600 * (1 + (coeff_ajustement / 100))) | int }}"
+              delta_time: "{{ [0, duree_now_sec - duree_matin] | max }}"
 
+          - if:
+              - condition: template
+                value_template: "{{ delta_time | int > 300 }}"
+            then:
+              - variables:
+                  recalc_fin: >
+                    {{ (now() + timedelta(seconds=delta_time | int)).strftime('%Y-%m-%d %H:%M:%S') }}
 
+              # Met à jour le helper de fin de cycle pour le nouveau créneau
+              - if:
+                  - condition: template
+                    value_template: "{{ fin_cycle_entity is not none and fin_cycle_entity != '' }}"
+                then:
+                  - service: input_datetime.set_datetime
+                    target:
+                      entity_id: "{{ fin_cycle_entity }}"
+                    data:
+                      datetime: "{{ recalc_fin }}"
 
-
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: !input input_cycle_start
+                data:
+                  datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: !input input_cycle_en_cours
+              - service: input_number.set_value
+                target:
+                  entity_id: !input input_duree_cycle
+                data:
+                  value: "{{ delta_time | int }}"
+              - service: switch.turn_on
+                target:
+                  entity_id: "{{ pompe_switch }}"
+              - choose:
+                  - conditions: "{{ enable_notif }}"
+                    sequence:
+                      - service: notify.send_message
+                        target:
+                          entity_id: "{{ notify_service }}"
+                        data:
+                          message: |
+                            ───────────────
+                            🔥 Recalcul après cycle
+                            🌡️ Température en hausse, cycle supplémentaire
+                            ➕ Ajout : {{ (delta_time/60) | int }} min
+                          title: "💧 Piscine"
+                          
+              - delay: "{{ delta_time | int }}"
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: !input input_cycle_en_cours
+              - service: switch.turn_off
+                target:
+                  entity_id: "{{ pompe_switch }}"
