@@ -1,11 +1,11 @@
 blueprint:
-  name: "💧 Gestion Intelligente Piscine v1.2.2"
+  name: "💧 Gestion Intelligente Piscine v1.2.3"
   description: |
 
     # 💧 Gestion Avancée de la Piscine
     Une solution complète pour automatiser la filtration, gérer les traitements et optimiser votre consommation électrique.
 
-    **Version: "1.2.2"**
+    **Version: "1.2.3"**
     
     ### 🚀 Fonctionnalités
     - 🕐 **Planification** : Cycle matinal + Pause moteur + Recalcul automatique.
@@ -28,8 +28,7 @@ blueprint:
     </details>
 
   domain: automation
-  source_url: "https://github.com/Locodice67/pool-control-automation/blob/v1.2.2/blueprints/pool-control-automation.yaml"
-  version: "1.2.2"
+  source_url: "https://github.com/Locodice67/pool-control-automation/blob/v1.2.3/blueprints/pool-control-automation.yaml"
   input:
 
     # ==========================================

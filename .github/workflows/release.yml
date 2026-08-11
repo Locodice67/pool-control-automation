@@ -19,11 +19,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract version from blueprint
+      - name: Extract version from blueprint description
         id: version
         run: |
-          VERSION=$(grep -E '^\s+version:\s+"?[0-9]+\.[0-9]+\.[0-9]+"?' blueprints/pool-control-automation.yaml \
-            | sed 's/.*version:\s*"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
+          VERSION=$(grep -oE '\*\*Version: "[0-9]+\.[0-9]+\.[0-9]+"\*\*' blueprints/pool-control-automation.yaml \
+            | head -n 1 | sed 's/.*"\([^"]*\)".*/\1/')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Extracted version: $VERSION"
 
