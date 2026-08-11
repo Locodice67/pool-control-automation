@@ -1,11 +1,11 @@
 blueprint:
-  name: "💧 Gestion Intelligente Piscine v1.2.0"
+  name: "💧 Gestion Intelligente Piscine v1.2.1"
   description: |
 
     # 💧 Gestion Avancée de la Piscine
     Une solution complète pour automatiser la filtration, gérer les traitements et optimiser votre consommation électrique.
 
-    **Version: "1.2.0"**
+    **Version: "1.2.1"**
     
     ### 🚀 Fonctionnalités
     - 🕐 **Planification** : Cycle matinal + Pause moteur + Recalcul automatique.
@@ -26,8 +26,8 @@ blueprint:
     </details>
 
   domain: automation
-  source_url: "https://github.com/Locodice67/pool-control-automation/blob/v1.2.0/blueprints/pool-control-automation.yaml"
-  version: "1.2.0"
+  source_url: "https://github.com/Locodice67/pool-control-automation/blob/v1.2.1/blueprints/pool-control-automation.yaml"
+  version: "1.2.1"
   input:
 
     # ==========================================
@@ -101,7 +101,7 @@ blueprint:
 
         input_activation_pause:
           name: "Activer la Pause Moteur"
-          description: "Permet de couper la pompe pendant 1h (pour refroidir le moteur)."
+          description: "Permet de couper la pompe pendant 1h."
           default: false
           selector:
             boolean: {}
@@ -123,7 +123,7 @@ blueprint:
       input:
         input_contenance_piscine:
           name: "Volume du bassin (m³)"
-          description: "Volume total d'eau de la piscine (utile pour le mode 'Filtration Volume')."
+          description: "Volume total d'eau de la piscine (indispensable pour le mode 'Filtration Volume')."
           default: 40
           selector:
             number:
@@ -133,7 +133,7 @@ blueprint:
 
         input_debit_pompe_piscine:
           name: "Débit de la pompe (m³/h)"
-          description: "Débit de filtration de votre pompe."
+          description: "Débit de filtration de votre pompe (indispensable pour le mode 'Filtration Volume')."
           default: 15
           selector:
             number:
@@ -194,19 +194,19 @@ blueprint:
             entity:
               domain: input_datetime
 
-        input_cycle_en_cours:
-          name: "Helper Etat (input_boolean)"
-          description: "Entité input_boolean indiquant si un cycle est actif."
-          selector:
-            entity:
-              domain: input_boolean
-
         input_fin_cycle:
           name: "Helper Fin de Cycle (input_datetime)"
           description: "Entité input_datetime mise à jour avec l'heure de fin calculée du cycle."
           selector:
             entity:
               domain: input_datetime
+
+        input_cycle_en_cours:
+          name: "Helper Etat (input_boolean)"
+          description: "Entité input_boolean indiquant si un cycle est actif."
+          selector:
+            entity:
+              domain: input_boolean
 
     # ==========================================
     # CATÉGORIE 5 : NOTIFICATIONS
@@ -486,7 +486,7 @@ actions:
             value_template: >
               {% set now_ts = as_timestamp(now()) %}
               {% set pt = as_timestamp(today_at(heure_pause)) %}
-              {{ not (pause_active and pt and now_ts >= pt and now_ts < (pt + 3600)) }}
+              {{ not (pause_active and pt and now_ts >= (pt - 30) and now_ts < (pt + 3600)) }}
         sequence:
           - choose:
               - conditions: "{{ enable_notif }}"
@@ -498,9 +498,9 @@ actions:
                       message: |
                         ───────────────
                         ⚠️ Arrêt manuel
-                        🕒 Pompe arrêtée à {{ now().strftime('%H:%M') }} (cycle en cours non interrompu)
+                        🕒 Pompe arrêtée à {{ now().strftime('%H:%M') }}
                       title: "💧 Piscine"
-          - stop: "Arrêt manuel (notification seule, cycle non interrompu)"
+          - stop: "Arrêt manuel"
 
       # -----------------------------------------------------------
       # 2. REDÉMARRAGE HA (Silencieux)
@@ -629,7 +629,16 @@ actions:
               fin_datetime: "{{ (now() + timedelta(seconds=duree_affichee_sec)).strftime('%Y-%m-%d %H:%M:%S') }}"
               # fin_str = HH:MM extrait de la datetime complète (gère le passage minuit)
               fin_str: "{{ fin_datetime[11:16] }}"
-              duree_h: "{{ (duree_affichee_sec/3600) | round(1) }}"
+              duree_filtration_sec: "{{ duree_secondes }}"
+              duree_filtration_h: "{{ (duree_filtration_sec | int // 3600) | int }}"
+              duree_filtration_min: "{{ ((duree_filtration_sec | int % 3600) / 60) | round(0) | int }}"
+              duree_filtration_str: >
+                {% set h = duree_filtration_h | int %}
+                {% set m = duree_filtration_min | int %}
+                {% if h > 0 and m > 0 %}{{ h }} heures et {{ m }} minutes
+                {% elif h > 0 %}{{ h }} heures
+                {% else %}{{ m }} minutes
+                {% endif %}
 
           # ─ Met à jour le helper input_datetime de fin de cycle ─
           # Ce changement d'état déclenche le blueprint de contrôle PAC/résistance
@@ -655,9 +664,9 @@ actions:
                         ───────────────
                         ⚙️ Mode actuel : {{ mode }}
                         🌡️ Températures : Eau {{ temp_piscine }}°C | Ext {{ temp_exterieure }}°C
-                        ⏱️ Planning : {{ debut_str }} → {{ fin_str }} ({{ duree_h }}h)
-                        {% if coeff_ajustement != 0 %}⚡ Ajustement : {{ coeff_ajustement }}%{% endif %}
-                        {% if pause_in_cycle %}⏸️ Pause moteur prévue à {{ heure_pause }}{% endif %}
+                        ⏱️ Planning : {{ debut_str }} → {{ fin_str }} ({{ duree_filtration_str }})
+                        {% if coeff_ajustement != 0 %}⚡ Ajustement : {{ coeff_ajustement }}%{% endif %}{% if pause_in_cycle %}
+                        ⏸️ Pause moteur prévue à {{ heure_pause }}{% endif %}
                       title: "💧 Piscine"
                       
 
@@ -717,35 +726,14 @@ actions:
                                 ▶️ Filtration reprise
                               title: "💧 Piscine"
                   - variables:
-                      remaining_time: "{{ duree_secondes - time_before_pause - 3600 }}"
+                      remaining_time: "{{ duree_secondes - time_before_pause }}"
                   - delay: "{{ [0, remaining_time | int] | max }}"
             default:
               - delay: "{{ duree_secondes }}"
 
-          # ─ FIN DU CYCLE PRINCIPAL ─
-          # (cycle marqué terminé avant l'extinction pompe : évite un faux "arrêt manuel" en mode parallel)
-          - service: input_boolean.turn_off
-            target:
-              entity_id: !input input_cycle_en_cours
-          - service: switch.turn_off
-            target:
-              entity_id: "{{ pompe_switch }}"
-          - choose:
-              - conditions: "{{ enable_notif }}"
-                sequence:
-                  - service: notify.send_message
-                    target:
-                      entity_id: "{{ notify_service }}"
-                    data:
-                      message: |
-                        ───────────────
-                        ✅ Cycle terminé !
-                        🏊 Piscine propre !
-                      title: "💧 Piscine"
-
-          # ─ Recalcul après cycle ─
-          # Les variables globales du blueprint sont figées au démarrage du run :
-          # on recalcule donc la durée avec les valeurs LIVE des entités.
+          # ─ Recalcul avant fin de cycle ─
+          # Calcul effectué PENDANT que la pompe tourne encore,
+          # pour déterminer si un temps de filtration supplémentaire est nécessaire.
           - variables:
               duree_matin: "{{ states(duree_cycle_entity) | float(0) }}"
               m_now: "{{ states(mode_entity) }}"
@@ -794,6 +782,8 @@ actions:
               duree_now_sec: "{{ (duree_now_h | float * 3600 * (1 + (coeff_ajustement / 100))) | int }}"
               delta_time: "{{ [0, duree_now_sec - duree_matin] | max }}"
 
+          # ─ Prolongation si filtration insuffisante ─
+          # La pompe tourne encore : on ajoute le temps manquant sans éteindre.
           - if:
               - condition: template
                 value_template: "{{ delta_time | int > 300 }}"
@@ -802,7 +792,6 @@ actions:
                   recalc_fin: >
                     {{ (now() + timedelta(seconds=delta_time | int)).strftime('%Y-%m-%d %H:%M:%S') }}
 
-              # Met à jour le helper de fin de cycle pour le nouveau créneau
               - if:
                   - condition: template
                     value_template: "{{ fin_cycle_entity is not none and fin_cycle_entity != '' }}"
@@ -818,17 +807,11 @@ actions:
                   entity_id: !input input_cycle_start
                 data:
                   datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-              - service: input_boolean.turn_on
-                target:
-                  entity_id: !input input_cycle_en_cours
               - service: input_number.set_value
                 target:
                   entity_id: !input input_duree_cycle
                 data:
                   value: "{{ delta_time | int }}"
-              - service: switch.turn_on
-                target:
-                  entity_id: "{{ pompe_switch }}"
               - choose:
                   - conditions: "{{ enable_notif }}"
                     sequence:
@@ -838,15 +821,30 @@ actions:
                         data:
                           message: |
                             ───────────────
-                            🔥 Recalcul après cycle
-                            🌡️ Température en hausse, cycle supplémentaire
+                            🔥 Prolongation du cycle
+                            🌡️ Température en hausse, filtration supplémentaire
                             ➕ Ajout : {{ (delta_time/60) | int }} min
                           title: "💧 Piscine"
-                          
+
               - delay: "{{ delta_time | int }}"
-              - service: input_boolean.turn_off
-                target:
-                  entity_id: !input input_cycle_en_cours
-              - service: switch.turn_off
-                target:
-                  entity_id: "{{ pompe_switch }}"
+
+          # ─ FIN DU CYCLE PRINCIPAL ─
+          # (cycle marqué terminé avant l'extinction pompe : évite un faux "arrêt manuel" en mode parallel)
+          - service: input_boolean.turn_off
+            target:
+              entity_id: !input input_cycle_en_cours
+          - service: switch.turn_off
+            target:
+              entity_id: "{{ pompe_switch }}"
+          - choose:
+              - conditions: "{{ enable_notif }}"
+                sequence:
+                  - service: notify.send_message
+                    target:
+                      entity_id: "{{ notify_service }}"
+                    data:
+                      message: |
+                        ───────────────
+                        ✅ Cycle terminé !
+                        🏊 Piscine propre !
+                      title: "💧 Piscine"
